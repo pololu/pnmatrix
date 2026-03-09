@@ -69,14 +69,17 @@ if CONFIG['CXX'] == 'clang++'
   $CXX_STANDARD = 'c++11'
 else
   version = gplusplus_version
-  if version < '4.3.0' && CONFIG['CXX'] == 'g++'  # see if we can find a newer G++, unless it's been overridden by user
+  major_version = version.split('.')[0].to_i # string comparison fails past 10.0.0
+
+  if major_version < 5 and
+    version < '4.3.0' && CONFIG['CXX'] == 'g++'  # see if we can find a newer G++, unless it's been overridden by user
     if !find_newer_gplusplus
       raise("You need a version of g++ which supports -std=c++0x or -std=c++11. If you're on a Mac and using Homebrew, we recommend using mac-brew-gcc.sh to install a more recent g++.")
     end
     version = gplusplus_version
   end
 
-  if version < '4.7.0'
+  if major_version < 5 and version < '4.7.0'
     $CXX_STANDARD = 'c++0x'
   else
     $CXX_STANDARD = 'c++11'
