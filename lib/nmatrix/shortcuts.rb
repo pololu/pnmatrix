@@ -230,7 +230,7 @@ class NMatrix
     #   NMatrix.zeros([1, 5], dtype: :int32) # =>  0  0  0  0  0
     #
     def zeros(shape, opts = {})
-      NMatrix.new(shape, 0, {:dtype => :float64}.merge(opts))
+      NMatrix.new(shape, 0, **{:dtype => :float64}.merge(opts))
     end
     alias :zeroes :zeros
 
@@ -255,7 +255,7 @@ class NMatrix
     #                                             1  1  1
     #
     def ones(shape, opts={})
-      NMatrix.new(shape, 1, {:dtype => :float64, :default => 1}.merge(opts))
+      NMatrix.new(shape, 1, **{:dtype => :float64}.merge(opts))
     end
 
     # call-seq:
@@ -268,7 +268,7 @@ class NMatrix
     # @return [NMatrix] a new nmatrix filled with ones.
     #
     def ones_like(nm)
-      NMatrix.ones(nm.shape, dtype: nm.dtype, stype: nm.stype, capacity: nm.capacity, default: 1)
+      NMatrix.ones(nm.shape, dtype: nm.dtype, stype: nm.stype, capacity: nm.capacity)
     end
 
     # call-seq:
@@ -281,7 +281,7 @@ class NMatrix
     # @return [NMatrix] a new nmatrix filled with zeros.
     #
     def zeros_like(nm)
-      NMatrix.zeros(nm.shape, dtype: nm.dtype, stype: nm.stype, capacity: nm.capacity, default: 0)
+      NMatrix.zeros(nm.shape, dtype: nm.dtype, stype: nm.stype, capacity: nm.capacity)
     end
 
     #
@@ -345,7 +345,7 @@ class NMatrix
     #            0.3333333333333333          0.25                  0.2
     #
     def hilbert(shape, opts={})
-      m = NMatrix.new([shape,shape], {:dtype => :float64}.merge(opts))
+      m = NMatrix.new([shape,shape], **{:dtype => :float64}.merge(opts))
       0.upto(shape - 1) do |i|
         0.upto(i) do |j|
           m[i,j] = 1.0 / (j + i + 1)
@@ -378,8 +378,8 @@ class NMatrix
     #
     def inv_hilbert(shape, opts={})
       opts = {:dtype => :float64}.merge(opts)
-      m = NMatrix.new([shape,shape],opts)
-      combination = NMatrix.new([2*shape,2*shape],opts)
+      m = NMatrix.new([shape,shape], **opts)
+      combination = NMatrix.new([2*shape,2*shape], **opts)
       #combinations refers to the combination of n things taken k at a time
       0.upto(2*shape-1) do |i|
         0.upto(i) do |j|
@@ -553,7 +553,7 @@ class NMatrix
         NMatrix.size(shape).times { |i| random_values << rng.rand(scale) }
       end
 
-      NMatrix.new(shape, random_values, {:dtype => :float64, :stype => :dense}.merge(opts))
+      NMatrix.new(shape, random_values, **{:dtype => :float64, :stype => :dense}.merge(opts))
     end
     alias :rand :random
     
@@ -595,7 +595,7 @@ class NMatrix
     #
     def magic(shape, opts={})
       raise(ArgumentError, "shape of two is not allowed") if shape == 2
-      nm = NMatrix.new([shape,shape], 0, {:dtype => :float64}.merge(opts))
+      nm = NMatrix.new([shape,shape], 0, **{:dtype => :float64}.merge(opts))
       if shape % 2 != 0
         MagicHelpers.odd_magic nm, shape
       elsif shape % 4 == 0
@@ -841,7 +841,7 @@ class NMatrix
       values = (0 ... NMatrix.size(shape)).to_a
 
       # It'll produce :int32, except if a dtype is provided.
-      NMatrix.new(shape, values, {:stype => :dense}.merge(options))
+      NMatrix.new(shape, values, **{:stype => :dense}.merge(options))
     end
 
     {:bindgen => :byte, :indgen => :int64, :findgen => :float32, :dindgen => :float64,
@@ -969,7 +969,7 @@ module NVector #:nodoc:
       random_values = []
       size.times { |i| random_values << rng.rand }
 
-      NMatrix.new([size,1], random_values, opts)
+      NMatrix.new([size,1], random_values, **opts)
     end
 
     #

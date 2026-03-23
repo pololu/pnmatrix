@@ -373,19 +373,19 @@ describe NMatrix do
 
   context "_like constructors" do
     before :each do
-      @nm_1d = NMatrix[5.0,0.0,1.0,2.0,3.0]
-      @nm_2d = NMatrix[[0.0,1.0],[2.0,3.0]]
+      @nm_1d = NMatrix.new([1,5], [5.0, 0.0, 1.0, 2.0, 3.0])
+      @nm_2d = NMatrix.new([2,2], [0.0, 1.0, 2.0, 3.0])
     end
 
     it "should create an nmatrix of ones with dimensions and type the same as its argument" do
       pending("not yet implemented for NMatrix-JRuby") if jruby?
-      expect(NMatrix.ones_like(@nm_1d)).to eq NMatrix[1.0, 1.0, 1.0, 1.0, 1.0]
-      expect(NMatrix.ones_like(@nm_2d)).to eq NMatrix[[1.0, 1.0], [1.0, 1.0]]
+      expect(NMatrix.ones_like(@nm_1d)).to eq NMatrix.new([1,5], [1.0, 1.0, 1.0, 1.0, 1.0])
+      expect(NMatrix.ones_like(@nm_2d)).to eq NMatrix.new([2,2], [1.0, 1.0, 1.0, 1.0])
     end
 
     it "should create an nmatrix of zeros with dimensions and type the same as its argument" do
-      expect(NMatrix.zeros_like(@nm_1d)).to eq NMatrix[0.0, 0.0, 0.0, 0.0, 0.0]
-      expect(NMatrix.zeros_like(@nm_2d)).to eq NMatrix[[0.0, 0.0], [0.0, 0.0]]
+      expect(NMatrix.zeros_like(@nm_1d)).to eq NMatrix.new([1,5], [0.0, 0.0, 0.0, 0.0, 0.0])
+      expect(NMatrix.zeros_like(@nm_2d)).to eq NMatrix.new([2,2], [0.0, 0.0, 0.0, 0.0])
     end
   end
 
@@ -467,7 +467,7 @@ describe "Inline constructor" do
 
   it "creates a NMatrix with the given values" do
     m = NMatrix.new([2, 2], [1, 4, 6, 7])
-    n = NMatrix[[1, 4], [6, 7]]
+    n = NMatrix.new([2,2], [1, 4, 6, 7])
 
     expect(m).to eq n
   end

@@ -69,7 +69,7 @@ class NMatrix
       NMatrix.new(4, [1.0, 0.0, 0.0, 0.0,
                       0.0, c,   -s,  0.0,
                       0.0, s,    c,  0.0,
-                      0.0, 0.0, 0.0, 1.0], {dtype: :float64}.merge(opts))
+                      0.0, 0.0, 0.0, 1.0], **{dtype: :float64}.merge(opts))
     end
 
     def y_rotation angle_in_radians, opts={}
@@ -78,7 +78,7 @@ class NMatrix
       NMatrix.new(4, [ c,  0.0,  s,  0.0,
                       0.0, 1.0, 0.0, 0.0,
                       -s,  0.0,  c,  0.0,
-                      0.0, 0.0, 0.0, 1.0], {dtype: :float64}.merge(opts))
+                      0.0, 0.0, 0.0, 1.0], **{dtype: :float64}.merge(opts))
     end
 
     def z_rotation angle_in_radians, opts={}
@@ -87,7 +87,7 @@ class NMatrix
       NMatrix.new(4, [ c,  -s,  0.0, 0.0,
                        s,   c,  0.0, 0.0,
                       0.0, 0.0, 1.0, 0.0,
-                      0.0, 0.0, 0.0, 1.0], {dtype: :float64}.merge(opts))
+                      0.0, 0.0, 0.0, 1.0], **{dtype: :float64}.merge(opts))
     end
 
 

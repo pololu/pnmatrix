@@ -24,6 +24,6 @@ Gem::Specification.new do |gem|
 
   gem.required_ruby_version = '>= 1.9'
 
-  gem.add_dependency 'nmatrix', NMatrix::VERSION::STRING
+  gem.add_dependency 'pnmatrix', NMatrix::VERSION::STRING
 end
 
