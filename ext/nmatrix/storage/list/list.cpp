@@ -779,7 +779,7 @@ void nm_list_storage_unregister(const STORAGE* s) {
  */
 static NODE* list_storage_get_single_node(LIST_STORAGE* s, SLICE* slice) {
   LIST* l = s->rows;
-  NODE* n;
+  NODE* n = NULL;
 
   for (size_t r = 0; r < s->dim; r++) {
     n = nm::list::find(l, s->offset[r] + slice->coords[r]);
@@ -1160,11 +1160,12 @@ void* nm_list_storage_get(const STORAGE* storage, SLICE* slice) {
 void* nm_list_storage_ref(const STORAGE* storage, SLICE* slice) {
   LIST_STORAGE* s = (LIST_STORAGE*)storage;
   LIST_STORAGE* ns = NULL;
+  NODE* n = NULL;
   nm_list_storage_register(s);
 
   //TODO: It needs a refactoring.
   if (slice->single) {
-    NODE* n = list_storage_get_single_node(s, slice);
+    n = list_storage_get_single_node(s, slice);
     nm_list_storage_unregister(s);
     return (n ? n->val : s->default_val);
   } else {

@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 #main gemspec
-gemspec :name => 'nmatrix'
+gemspec :name => 'pnmatrix'
 
 #plugin gemspecs
 Dir['nmatrix-*.gemspec'].each do |gemspec_file|

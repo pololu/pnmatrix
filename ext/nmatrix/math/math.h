@@ -339,12 +339,12 @@ namespace smmp_sort {
     if (a < b) {
       if (b < c) return b; // a b c
       if (a < c) return c; // a c b
-                 return a; // c a b
+      return a; // c a b
 
     } else { // a > b
       if (a < c) return a; // b a c
       if (b < c) return c; // b c a
-                 return b; // c b a
+      return b; // c b a
     }
   }
 

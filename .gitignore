@@ -33,3 +33,4 @@ ext/nmatrix_java/build/
 ext/nmatrix_java/target/
 *.class
 *.jar
+lib/*.h
