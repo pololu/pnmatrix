@@ -1034,7 +1034,7 @@ class NMatrix
   def clone_structure(capacity = nil)
     opts = {stype: self.stype, default: self.default_value, dtype: self.dtype}
     opts = {capacity: capacity}.merge(opts) if self.yale?
-    NMatrix.new(self.shape, opts)
+    NMatrix.new(self.shape, **opts)
   end
 
   #
@@ -1099,7 +1099,7 @@ protected
       # We can generally predict the change in capacity for Yale.
       opts = {capacity: self.capacity - self.shape[0] + new_shape[0]}.merge(opts)
     end
-    NMatrix.new(new_shape, opts)
+    NMatrix.new(new_shape, **opts)
   end
 
 
