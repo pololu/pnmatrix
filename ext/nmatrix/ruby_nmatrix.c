@@ -409,6 +409,7 @@ void Init_nmatrix() {
  */
 static VALUE nm_alloc(VALUE klass) {
   NMATRIX* mat = NM_ALLOC(NMATRIX);
+  mat->stype = nm::DENSE_STORE;
   mat->storage = NULL;
 
   // DO NOT MARK This STRUCT. It has no storage allocated, and no stype, so mark will do an invalid something.
@@ -454,6 +455,8 @@ static VALUE nm_capacity(VALUE self) {
  * Mark function.
  */
 void nm_mark(NMATRIX* mat) {
+  if (!mat || !mat->storage) return;
+
   STYPE_MARK_TABLE(mark)
   mark[mat->stype](mat->storage);
 }
@@ -463,12 +466,17 @@ void nm_mark(NMATRIX* mat) {
  * Destructor.
  */
 void nm_delete(NMATRIX* mat) {
+  if (!mat) return;
+
   static void (*ttable[nm::NUM_STYPES])(STORAGE*) = {
     nm_dense_storage_delete,
     nm_list_storage_delete,
     nm_yale_storage_delete
   };
-  ttable[mat->stype](mat->storage);
+
+  if (mat->storage && mat->stype < nm::NUM_STYPES) {
+    ttable[mat->stype](mat->storage);
+  }
 
   NM_FREE(mat);
 }
@@ -477,12 +485,17 @@ void nm_delete(NMATRIX* mat) {
  * Slicing destructor.
  */
 void nm_delete_ref(NMATRIX* mat) {
+  if (!mat) return;
+
   static void (*ttable[nm::NUM_STYPES])(STORAGE*) = {
     nm_dense_storage_delete_ref,
     nm_list_storage_delete_ref,
     nm_yale_storage_delete_ref
   };
-  ttable[mat->stype](mat->storage);
+
+  if (mat->storage && mat->stype < nm::NUM_STYPES) {
+    ttable[mat->stype](mat->storage);
+  }
 
   NM_FREE(mat);
 }
@@ -1144,7 +1157,7 @@ static VALUE nm_init_new_version(int argc, VALUE* argv, VALUE self) {
   // Get the shape.
   size_t  dim;
   size_t* shape = interpret_shape(shape_ary, &dim);
-  void*   init;
+  void*   init = NULL;
   void*   v = NULL;
   size_t  v_size = 0;
 
