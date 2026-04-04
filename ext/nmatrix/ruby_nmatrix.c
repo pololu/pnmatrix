@@ -516,7 +516,9 @@ static void __nm_mark_value_container(NM_GC_HOLDER* gc_value_holder_struct) {
   if (gc_value_holder_struct && gc_value_holder_struct->start) {
     NM_GC_LL_NODE* curr = gc_value_holder_struct->start;
     while (curr) {
-      rb_gc_mark_locations(curr->val, curr->val + curr->n);
+      if (curr->val && curr->n) {
+        rb_gc_mark_locations(curr->val, curr->val + curr->n);
+      }
       curr = curr->next;
     }
   }
@@ -553,7 +555,13 @@ void nm_register_values(VALUE* values, size_t n) {
     } else {
       to_insert = NM_ALLOC_NONRUBY(NM_GC_LL_NODE);
     }
-    to_insert->val = values;
+    to_insert->key = values;
+    if (n) {
+      to_insert->val = NM_ALLOC_N(VALUE, n);
+      memcpy(to_insert->val, values, sizeof(VALUE) * n);
+    } else {
+      to_insert->val = NULL;
+    }
     to_insert->n = n;
     to_insert->next = gc_value_holder_struct->start;
     gc_value_holder_struct->start = to_insert;
@@ -570,13 +578,17 @@ void nm_unregister_values(VALUE* values, size_t n) {
       NM_GC_LL_NODE* curr = gc_value_holder_struct->start;
       NM_GC_LL_NODE* last = NULL;
       while (curr) {
-        if (curr->val == values) {
+        if (curr->key == values) {
           if (last) {
             last->next = curr->next;
           } else {
             gc_value_holder_struct->start = curr->next;
           }
+          if (curr->val) {
+            NM_FREE(curr->val);
+          }
           curr->next = allocated_pool->start;
+          curr->key = NULL;
           curr->val = NULL;
           curr->n = 0;
           allocated_pool->start = curr;
@@ -615,14 +627,18 @@ void nm_completely_unregister_value(VALUE* val) {
     NM_GC_LL_NODE* curr = gc_value_holder_struct->start;
     NM_GC_LL_NODE* last = NULL;
     while (curr) {
-      if (curr->val == val) {
+      if (curr->key == val) {
         if (last) {
           last->next = curr->next;
         } else {
           gc_value_holder_struct->start = curr->next;
         }
         NM_GC_LL_NODE* temp_next = curr->next;
+        if (curr->val) {
+          NM_FREE(curr->val);
+        }
         curr->next = allocated_pool->start;
+        curr->key = NULL;
         curr->val = NULL;
         curr->n = 0;
         allocated_pool->start = curr;
