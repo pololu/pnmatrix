@@ -338,6 +338,7 @@ NM_DEF_STRUCT_POST(NMATRIX);  // };
 /* Structs for dealing with VALUEs in use so that they don't get GC'd */
 
 NM_DEF_STRUCT_PRE(NM_GC_LL_NODE);       // struct NM_GC_LL_NODE {
+  VALUE* key;                           //   VALUE* key;
   VALUE* val;                           //   VALUE* val;
   size_t n;                             //   size_t n;
   NM_DECL_STRUCT(NM_GC_LL_NODE*, next); //   NM_GC_LL_NODE* next;
