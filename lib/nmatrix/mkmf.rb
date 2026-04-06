@@ -32,7 +32,7 @@ def find_newer_gplusplus #:nodoc:
   [9,8,7,6,5,4,3].each do |minor|
     ver = "4.#{minor}"
     gpp = "g++-#{ver}"
-    result = `which #{gpp}`
+    result = `type #{gpp}`
     next if result.empty?
     CONFIG['CXX'] = gpp
     puts ver
