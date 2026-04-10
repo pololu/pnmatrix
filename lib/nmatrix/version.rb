@@ -27,9 +27,9 @@ class NMatrix
   # native IO. If you change the format, please make sure that native
   # IO can still understand NMatrix::VERSION.
   module VERSION #:nodoc:
-    MAJOR = 1
-    MINOR = 2
-    TINY = 4
+    MAJOR = 2
+    MINOR = 0
+    TINY = 0
     #PRE = "a"
 
     STRING = [MAJOR, MINOR, TINY].compact.join(".")
