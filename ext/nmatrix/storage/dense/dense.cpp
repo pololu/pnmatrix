@@ -311,14 +311,20 @@ void nm_dense_storage_mark(STORAGE* storage_base) {
   DENSE_STORAGE* storage = (DENSE_STORAGE*)storage_base;
 
   if (storage && storage->dtype == nm::RUBYOBJ) {
-    VALUE* els = reinterpret_cast<VALUE*>(storage->elements);
+    /*
+     * Dense slice references share the source storage's elements pointer and
+     * may start at a non-zero offset. Marking only the reference's element
+     * count from offset zero can miss Ruby objects that are visible through
+     * the reference. Mark the backing source storage so every object that a
+     * live reference can expose stays alive.
+     */
+    DENSE_STORAGE* src = reinterpret_cast<DENSE_STORAGE*>(storage->src);
 
-    if (els) {
-      rb_gc_mark_locations(els, &(els[nm_storage_count_max_elements(storage)-1]));
+    size_t count = src ? nm_storage_count_max_elements(src) : 0;
+    if (src && src->elements && count > 0) {
+      VALUE* els = reinterpret_cast<VALUE*>(src->elements);
+      rb_gc_mark_locations(els, els + count);
     }
-    //for (size_t index = nm_storage_count_max_elements(storage); index-- > 0;) {
-    //  rb_gc_mark(els[index]);
-    //}
   }
 }
 
