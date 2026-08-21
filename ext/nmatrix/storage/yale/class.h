@@ -50,7 +50,18 @@ public:
    : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
      slice(storage != storage->src),
      slice_shape(storage->shape),
-     slice_offset(storage->offset)
+     slice_offset(storage->offset),
+     owner(Qnil)
+  {
+    nm_yale_storage_register(storage->src);
+  }
+
+  YaleStorage(const YALE_STORAGE* storage, VALUE owner_)
+   : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
+     slice(storage != storage->src),
+     slice_shape(storage->shape),
+     slice_offset(storage->offset),
+     owner(owner_)
   {
     nm_yale_storage_register(storage->src);
   }
@@ -59,7 +70,8 @@ public:
    : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
      slice(storage != storage->src),
      slice_shape(storage->shape),
-     slice_offset(storage->offset)
+     slice_offset(storage->offset),
+     owner(Qnil)
   {
     nm_yale_storage_register(reinterpret_cast<STORAGE*>(storage->src));
   }
@@ -95,6 +107,17 @@ public:
   inline D* a_p()         const       { return reinterpret_cast<D*>(s->a); }
   inline const D& a(size_t p) const   { return a_p()[p]; }
   inline D& a(size_t p)               { return a_p()[p]; }
+
+  // Object matrices store Ruby VALUEs in native memory, so replacing a value must
+  // go through Ruby's write barrier. Without it, generational GC can collect a
+  // newly assigned object before the matrix is marked again.
+  inline void write_a(size_t p, const D& val) {
+    if (dtype() == nm::RUBYOBJ && owner != Qnil) {
+      RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(s->a) + p, reinterpret_cast<const VALUE*>(&val)[0]);
+    } else {
+      a(p) = val;
+    }
+  }
 
   bool real_row_empty(size_t i) const { return ija(i+1) - ija(i) == 0 ? true : false; }
 
@@ -467,7 +490,7 @@ public:
    * A pseudo-insert operation, since the diagonal portion of the A array is constant size.
    */
   stored_diagonal_iterator insert(stored_diagonal_iterator position, const D& val) {
-    *position = val;
+    write_a(position.p(), val);
     return position;
   }
 
@@ -995,10 +1018,18 @@ protected:
         if (v_offset >= v_size) v_offset %= v_size;
 
         if (j + real_j == i + real_i) { // modify diagonal
-          new_a[real_i + i] = v[v_offset];
+          if (s->dtype == nm::RUBYOBJ && owner != Qnil) {
+            RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(new_a) + real_i + i, reinterpret_cast<const VALUE*>(v)[v_offset]);
+          } else {
+            new_a[real_i + i] = v[v_offset];
+          }
         } else if (v[v_offset] != const_default_obj()) {
           new_ija[q]        = j + real_j;
-          new_a[q]          = v[v_offset];
+          if (s->dtype == nm::RUBYOBJ && owner != Qnil) {
+            RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(new_a) + q, reinterpret_cast<const VALUE*>(v)[v_offset]);
+          } else {
+            new_a[q]        = v[v_offset];
+          }
           ++q; // move on to next q location
         }
 
@@ -1132,6 +1163,7 @@ protected:
   bool          slice;
   size_t*       slice_shape;
   size_t*       slice_offset;
+  VALUE         owner;
 };
 
 } // end of nm namespace

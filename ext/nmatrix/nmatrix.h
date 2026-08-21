@@ -376,6 +376,14 @@ NM_DEF_STRUCT_POST(NM_GC_HOLDER);       // };
 // enum for a list of possible storage types.
 #define NM_STYPE(val)           (NM_STRUCT(val)->stype)
 
+/*
+ * Object dtype storage keeps Ruby VALUEs in malloc-backed arrays/lists, not in
+ * Ruby object fields. After mutating that native storage, make the wrapper
+ * object write-barrier-unprotected so minor GC runs nm_mark and sees newly
+ * assigned VALUEs before they can be collected.
+ */
+#define NM_OBJECT_STORAGE_WB_UNPROTECT(val) RB_OBJ_WB_UNPROTECT(val)
+
 // Get the shape of the ith dimension (int)
 #define NM_SHAPE(val,i)         (NM_STORAGE(val)->shape[(i)])
 

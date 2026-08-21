@@ -538,6 +538,9 @@ void set(VALUE left, SLICE* slice, VALUE right) {
   NM_CONSERVATIVE(nm_register_value(&left));
   NM_CONSERVATIVE(nm_register_value(&right));
   LIST_STORAGE* s = NM_STORAGE_LIST(left);
+  if (s->dtype == nm::RUBYOBJ) {
+    NM_OBJECT_STORAGE_WB_UNPROTECT(left);
+  }
 
   std::pair<NMATRIX*,bool> nm_and_free =
     interpret_arg_as_dense_nmatrix(right, NM_DTYPE(left));
