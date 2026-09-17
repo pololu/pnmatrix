@@ -1,0 +1,25 @@
+name: Specs
+
+"on":
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  specs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Install Ruby dependencies
+        run: nix-shell --run 'bundle install --jobs=3 --retry=3'
+
+      - name: Compile extension and run specs
+        run: nix-shell --run 'bundle exec rake compile && bundle exec rake spec'
