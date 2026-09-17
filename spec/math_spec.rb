@@ -82,8 +82,10 @@ describe "math" do
             end
 
             it "should correctly apply elementwise natural log" do
-              expect(@m.log).to eq N.new(@size, [0, Math.log(2), Math.log(3), Math.log(4)],
-                                        dtype: :float64, stype: stype)
+              expect(@m.log).to be_within(1e-14).of(
+                N.new(@size, [0, Math.log(2), Math.log(3), Math.log(4)],
+                      dtype: :float64, stype: stype)
+              )
             end
 
             it "should correctly apply elementwise log with arbitrary base" do

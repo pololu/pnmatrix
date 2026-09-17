@@ -163,4 +163,19 @@ describe NMatrix do
 
     touch_reference(matrix)
   end
+
+  specify "does not expose partially built Yale object storage during a cast" do
+    previous_gc_stress = GC.stress
+    GC.stress = true
+
+    current_stock = NMatrix.new([30, 1], 0, stype: :yale, dtype: :float64)
+    current_stock[3] = -4
+    current_stock[7] = 10
+    current_stock[11] = 50
+
+    quantity_made = (current_stock < 0).cast(dtype: :int32) * current_stock * -1
+    expect(quantity_made[3]).to eq(4)
+  ensure
+    GC.stress = previous_gc_stress
+  end
 end
