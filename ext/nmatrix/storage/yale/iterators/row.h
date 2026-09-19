@@ -303,7 +303,7 @@ public:
     while (!position.end() && position.j() < jj) ++position; // position is just a hint. (This loop ideally only has to happen once.)
 
     if (!position.end() && position.j() == jj) {
-      *position = val;      // replace existing
+      y.write_a(position.p(), val);      // replace existing
     } else {
 
       if (sz + 1 > y.capacity()) {
@@ -313,7 +313,7 @@ public:
         y.update_real_row_sizes_from(real_i(), 1);
       }
       ija(position.p()) = jj + y.offset(1);    // set column ID
-      a(position.p())   = val;
+      y.write_a(position.p(), val);
       adjust_length(1);
     }
 
@@ -331,7 +331,7 @@ public:
    */
   //template <typename = typename std::enable_if<!std::is_const<RefType>::value>::type>
   void insert(size_t j, const D& val) {
-    if (j + y.offset(1) == real_i())  a(real_i()) = val;
+    if (j + y.offset(1) == real_i())  y.write_a(real_i(), val);
     else {
       row_stored_nd_iterator jt = ndfind(j);
       if (!jt.end() && jt.j() == j) {
@@ -404,10 +404,10 @@ public:
       if (v_offset >= v_size) v_offset %= v_size; // reset v position.
 
       if (jc + y.offset(1) == real_i()) {
-        y.a(real_i())   = v[v_offset];  // modify diagonal
+        y.write_a(real_i(), v[v_offset]);  // modify diagonal
       } else if (v[v_offset] != y.const_default_obj()) {
         y.ija(pp)       = jc;           // modify non-diagonal
-        y.a(pp)         = v[v_offset];
+        y.write_a(pp, v[v_offset]);
         ++pp;
       }
     }

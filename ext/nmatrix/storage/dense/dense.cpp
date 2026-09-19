@@ -102,17 +102,21 @@ namespace nm { namespace dense_storage {
    * Recursive function, sets multiple values in a matrix from a single source value. Same basic pattern as slice_copy.
    */
   template <typename D>
-  static void slice_set(DENSE_STORAGE* dest, size_t* lengths, size_t pdest, size_t rank, D* const v, size_t v_size, size_t& v_offset) {
+  static void slice_set(VALUE owner, DENSE_STORAGE* dest, size_t* lengths, size_t pdest, size_t rank, D* const v, size_t v_size, size_t& v_offset) {
     if (dest->dim - rank > 1) {
       for (size_t i = 0; i < lengths[rank]; ++i) {
-        slice_set<D>(dest, lengths, pdest + dest->stride[rank] * i, rank + 1, v, v_size, v_offset);
+        slice_set<D>(owner, dest, lengths, pdest + dest->stride[rank] * i, rank + 1, v, v_size, v_offset);
       }
     } else {
       for (size_t p = 0; p < lengths[rank]; ++p, ++v_offset) {
         if (v_offset >= v_size) v_offset %= v_size;
 
         D* elem = reinterpret_cast<D*>(dest->elements);
-        elem[p + pdest] = v[v_offset];
+        if (dest->dtype == nm::RUBYOBJ) {
+          RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(elem) + p + pdest, reinterpret_cast<VALUE*>(v)[v_offset]);
+        } else {
+          elem[p + pdest] = v[v_offset];
+        }
       }
     }
   }
@@ -127,6 +131,9 @@ namespace nm { namespace dense_storage {
     NM_CONSERVATIVE(nm_register_value(&right));
 
     DENSE_STORAGE* s = NM_STORAGE_DENSE(left);
+    if (s->dtype == nm::RUBYOBJ) {
+      NM_OBJECT_STORAGE_WB_UNPROTECT(left);
+    }
 
     std::pair<NMATRIX*,bool> nm_and_free =
       interpret_arg_as_dense_nmatrix(right, s->dtype);
@@ -158,10 +165,15 @@ namespace nm { namespace dense_storage {
     }
 
     if (slice->single) {
-      reinterpret_cast<D*>(s->elements)[nm_dense_storage_pos(s, slice->coords)] = *v;
+      size_t pos = nm_dense_storage_pos(s, slice->coords);
+      if (s->dtype == nm::RUBYOBJ) {
+        RB_OBJ_WRITE(left, reinterpret_cast<VALUE*>(s->elements) + pos, *reinterpret_cast<VALUE*>(v));
+      } else {
+        reinterpret_cast<D*>(s->elements)[pos] = *v;
+      }
     } else {
       size_t v_offset = 0;
-      slice_set(s, slice->lengths, nm_dense_storage_pos(s, slice->coords), 0, v, v_size, v_offset);
+      slice_set(left, s, slice->lengths, nm_dense_storage_pos(s, slice->coords), 0, v, v_size, v_offset);
     }
 
     // Only free v if it was allocated in this function.
@@ -311,14 +323,25 @@ void nm_dense_storage_mark(STORAGE* storage_base) {
   DENSE_STORAGE* storage = (DENSE_STORAGE*)storage_base;
 
   if (storage && storage->dtype == nm::RUBYOBJ) {
-    VALUE* els = reinterpret_cast<VALUE*>(storage->elements);
+    /*
+     * Dense slice references share the source storage's elements pointer and
+     * may start at a non-zero offset. Marking only the reference's element
+     * count from offset zero can miss Ruby objects that are visible through
+     * the reference. Mark the backing source storage so every object that a
+     * live reference can expose stays alive.
+     */
+    DENSE_STORAGE* src = reinterpret_cast<DENSE_STORAGE*>(storage->src);
 
-    if (els) {
-      rb_gc_mark_locations(els, &(els[nm_storage_count_max_elements(storage)-1]));
+    size_t count = src ? nm_storage_count_max_elements(src) : 0;
+    if (src && src->elements && count > 0) {
+      VALUE* els = reinterpret_cast<VALUE*>(src->elements);
+      /*
+       * This storage holds exact Ruby VALUEs, not arbitrary machine words.
+       * Mark each slot explicitly so objects assigned into malloc-backed
+       * matrix memory are kept alive just like Ruby object fields would be.
+       */
+      for (size_t i = 0; i < count; ++i) rb_gc_mark(els[i]);
     }
-    //for (size_t index = nm_storage_count_max_elements(storage); index-- > 0;) {
-    //  rb_gc_mark(els[index]);
-    //}
   }
 }
 

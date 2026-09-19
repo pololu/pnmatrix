@@ -1,10 +1,12 @@
 let
+  # nixos-26.05 from 2026-06-03:
+  nixpkgs-version = "b51242d";
   nixpkgs = fetchTarball {
-    name = "nixpkgs";
-    url = "https://github.com/NixOS/nixpkgs/archive/76701a179d3a98b07653e2b0409847499b2a07d3.tar.gz";
-    sha256 = "1nj2z9jy99zzqr7mmclr99gh71b26njh66hssmqm1flgxl64svg4";
+    name = "nixpkgs-${nixpkgs-version}";
+    url = "https://github.com/NixOS/nixpkgs/archive/${nixpkgs-version}.tar.gz";
+    sha256 = "0ldd02kkfzndk0x98zsg992gqz84ip18hvrq01wws6p96ki176rb";
   };
-  pkgs = import nixpkgs {};
+  pkgs = (import nixpkgs {});
 in
 
 pkgs.mkShellNoCC {
@@ -13,5 +15,7 @@ pkgs.mkShellNoCC {
     bundler
     gcc
     libgcc
+    blas
+    lapack
   ];
 }

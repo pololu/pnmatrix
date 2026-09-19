@@ -727,7 +727,7 @@ class NMatrix
     end
 
     # Do the actual construction.
-    n = NMatrix.new(new_shape, opts)
+    n = NMatrix.new(new_shape, **opts)
 
     # Figure out where to start concatenation. We don't know where it will end,
     # because each matrix may have own size along concat dimension.

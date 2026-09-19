@@ -82,8 +82,10 @@ describe "math" do
             end
 
             it "should correctly apply elementwise natural log" do
-              expect(@m.log).to eq N.new(@size, [0, Math.log(2), Math.log(3), Math.log(4)],
-                                        dtype: :float64, stype: stype)
+              expect(@m.log).to be_within(1e-14).of(
+                N.new(@size, [0, Math.log(2), Math.log(3), Math.log(4)],
+                      dtype: :float64, stype: stype)
+              )
             end
 
             it "should correctly apply elementwise log with arbitrary base" do
@@ -264,6 +266,7 @@ describe "math" do
           expect(r).to eq(b)
         rescue NotImplementedError
           pending "potrf! not implemented without plugins"
+          raise
         end
       end
 
@@ -280,6 +283,7 @@ describe "math" do
           expect(r).to eq(b)
         rescue NotImplementedError
           pending "potrf! not implemented without plugins"
+          raise
         end
       end
 
@@ -295,6 +299,7 @@ describe "math" do
           expect(l).to eq(l_true)
         rescue NotImplementedError
           pending "potrf! not implemented without plugins"
+          raise
         end
       end
     end
@@ -325,11 +330,13 @@ describe "math" do
         begin
           q,r = a.factorize_qr
 
-          expect(q).to be_within(err).of(q_solution)
-          expect(r).to be_within(err).of(r_solution)
+          # QR factors are only defined up to matched column/row signs.
+          expect(q.abs).to be_within(err).of(q_solution.abs)
+          expect(r.abs).to be_within(err).of(r_solution.abs)
 
         rescue NotImplementedError
           pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+          raise
         end
       end
 
@@ -359,11 +366,13 @@ describe "math" do
         begin
           q,r = a.factorize_qr
 
-          expect(q).to be_within(err).of(q_solution)
-          expect(r).to be_within(err).of(r_solution)
+          # QR factors are only defined up to matched column/row signs.
+          expect(q.abs).to be_within(err).of(q_solution.abs)
+          expect(r.abs).to be_within(err).of(r_solution.abs)
 
         rescue NotImplementedError
           pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+          raise
         end
       end
 
@@ -387,11 +396,13 @@ describe "math" do
         begin
           q,r = a.factorize_qr
 
-          expect(q).to be_within(err).of(q_solution)
-          expect(r).to be_within(err).of(r_solution)
+          # QR factors are only defined up to matched column/row signs.
+          expect(q.abs).to be_within(err).of(q_solution.abs)
+          expect(r.abs).to be_within(err).of(r_solution.abs)
 
         rescue NotImplementedError
           pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+          raise
         end
       end
 
@@ -416,6 +427,7 @@ describe "math" do
 
         rescue NotImplementedError
           pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+          raise
         end
       end
 
@@ -444,6 +456,7 @@ describe "math" do
 
         rescue NotImplementedError
           pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+          raise
         end
       end
     end
@@ -461,7 +474,7 @@ describe "math" do
             end
 
       it "should correctly invert a matrix in place (bang)" do
-        pending("not yet implemented for :object dtype") if dtype == :object
+        pending("not yet implemented for :object dtype") if dtype == :object && defined?(NMatrix::LAPACKE)
         a = NMatrix.new(:dense, 5, [1, 8,-9, 7, 5,
                                     0, 1, 0, 4, 4,
                                     0, 0, 1, 2, 5,
@@ -529,6 +542,7 @@ describe "math" do
             expect(a.dot(a.pinv)).to be_within(err).of(b)
           rescue NotImplementedError
             pending "Suppressing a NotImplementedError when the atlas plugin is not available"
+            raise
           end
 
         else
@@ -539,6 +553,7 @@ describe "math" do
             expect(a.dot(a.pinv)).to be_within(err).of(b)
           rescue NotImplementedError
             pending "Suppressing a NotImplementedError when the atlas plugin is not available"
+            raise
           end
         end
       end
@@ -556,6 +571,7 @@ describe "math" do
             expect(b.dot(a.dot(b))).to be_within(err).of(b)
           rescue NotImplementedError
             pending "Suppressing a NotImplementedError when the atlas plugin is not available"
+            raise
           end
 
         else
@@ -567,6 +583,7 @@ describe "math" do
             expect(b.dot(a.dot(b))).to be_within(err).of(b)
           rescue NotImplementedError
             pending "Suppressing a NotImplementedError when the atlas plugin is not available"
+            raise
           end
         end
       end
@@ -1134,7 +1151,6 @@ describe "math" do
           expect(@c.det).to be_within(@err).of(-18)
         end
         it "computes the exact determinant of 2x2 matrix" do
-          pending("not yet implemented for :object dtype") if dtype == :object
           if dtype == :byte
             expect{@a.det_exact}.to raise_error(DataTypeError)
           else
@@ -1166,7 +1182,6 @@ describe "math" do
           end
 
           it "scales the matrix by a given factor and return the result" do
-            pending("not yet implemented for :object dtype") if dtype == :object
             if integer_dtype? dtype
               expect{@m.scale 2.0}.to raise_error(DataTypeError)
             else
@@ -1178,7 +1193,6 @@ describe "math" do
           end
 
           it "scales the matrix in place by a given factor" do
-            pending("not yet implemented for :object dtype") if dtype == :object
             if dtype == :int8
               expect{@m.scale! 2}.to raise_error(DataTypeError)
             else
@@ -1196,7 +1210,6 @@ describe "math" do
   context "matrix_norm" do
     ALL_DTYPES.each do |dtype|
       context dtype do
-        pending("not yet implemented for :object dtype") if dtype == :object
         before do
           @n = NMatrix.new([3,3], [-4,-3,-2,
                                    -1, 0, 1,
@@ -1215,6 +1228,7 @@ describe "math" do
 
               rescue NotImplementedError
                 pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+                raise
             end
           end
         end
@@ -1240,6 +1254,7 @@ describe "math" do
               expect(@n.matrix_norm(-2)).to be_within(@matrix_norm_TOLERANCE).of(0.0)
               rescue NotImplementedError
                 pending "Suppressing a NotImplementedError when the lapacke plugin is not available"
+                raise
             end
             expect(@n.matrix_norm(-1)).to eq(6)
           end
@@ -1293,6 +1308,7 @@ describe "math" do
 
           rescue NotImplementedError
             pending "Suppressing a NotImplementedError when the lapacke plugin is not available" 
+            raise
           end         
         end
 
@@ -1308,6 +1324,7 @@ describe "math" do
 
           rescue NotImplementedError
              pending "Suppressing a NotImplementedError when the lapacke plugin is not available" 
+             raise
           end
         end
 
@@ -1323,6 +1340,7 @@ describe "math" do
 
           rescue NotImplementedError
              pending "Suppressing a NotImplementedError when the lapacke plugin is not available" 
+             raise
           end
         end
 
@@ -1338,6 +1356,7 @@ describe "math" do
 
           rescue NotImplementedError
              pending "Suppressing a NotImplementedError when the lapacke plugin is not available" 
+             raise
           end
         end
 
@@ -1353,6 +1372,7 @@ describe "math" do
 
           rescue NotImplementedError
              pending "Suppressing a NotImplementedError when the lapacke plugin is not available" 
+             raise
           end
         end
 

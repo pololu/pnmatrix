@@ -213,8 +213,9 @@ describe "NMatrix::LAPACK functions implemented with LAPACKE interface" do
               end
 
         expect(s).to be_within(err).of(s_true)
-        expect(u).to be_within(err).of(u_true)
-        expect(vt).to be_within(err).of(vt_true)
+        # Singular vectors are only defined up to sign (or complex phase).
+        expect(u.abs).to be_within(err).of(u_true.abs)
+        expect(vt.abs).to be_within(err).of(vt_true.abs)
       end
 
       it "calculates the singular value decomposition with lapacke_gesdd" do
@@ -241,8 +242,9 @@ describe "NMatrix::LAPACK functions implemented with LAPACKE interface" do
               end
 
         expect(s).to be_within(err).of(s_true)
-        expect(u).to be_within(err).of(u_true)
-        expect(vt).to be_within(err).of(vt_true)
+        # Singular vectors are only defined up to sign (or complex phase).
+        expect(u.abs).to be_within(err).of(u_true.abs)
+        expect(vt.abs).to be_within(err).of(vt_true.abs)
       end
 
       it "calculates eigenvalues and eigenvectors using lapacke_geev" do
@@ -295,8 +297,9 @@ describe "NMatrix::LAPACK functions implemented with LAPACKE interface" do
               end
 
         expect(w).to be_within(err).of(w_true)
-        expect(vr).to be_within(err).of(vr_true)
-        expect(vl).to be_within(err).of(vl_true)
+        # Eigenvectors are only defined up to sign (or complex phase).
+        expect(vr.abs).to be_within(err).of(vr_true.abs)
+        expect(vl.abs).to be_within(err).of(vl_true.abs)
       end
       
       it "exposes lapacke_geqrf" do

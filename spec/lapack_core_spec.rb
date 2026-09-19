@@ -273,8 +273,9 @@ describe "NMatrix::LAPACK functions with internal implementations" do
               end
 
         expect(s).to be_within(err).of(s_true)
-        expect(u).to be_within(err).of(u_true)
-        expect(vt).to be_within(err).of(vt_true)
+        # Singular vectors are only defined up to sign (or complex phase).
+        expect(u.abs).to be_within(err).of(u_true.abs)
+        expect(vt.abs).to be_within(err).of(vt_true.abs)
 
         expect(s.dtype).to eq(a.abs_dtype)
         expect(u.dtype).to eq(dtype)
@@ -306,8 +307,9 @@ describe "NMatrix::LAPACK functions with internal implementations" do
               end
 
         expect(s).to be_within(err).of(s_true)
-        expect(u).to be_within(err).of(u_true)
-        expect(vt).to be_within(err).of(vt_true)
+        # Singular vectors are only defined up to sign (or complex phase).
+        expect(u.abs).to be_within(err).of(u_true.abs)
+        expect(vt.abs).to be_within(err).of(vt_true.abs)
       end
 
 
@@ -337,8 +339,9 @@ describe "NMatrix::LAPACK functions with internal implementations" do
               end
 
         expect(eigenvalues).to be_within(err).of(eigenvalues_true)
-        expect(vr).to be_within(err).of(vr_true)
-        expect(vl).to be_within(err).of(vl_true)
+        # Eigenvectors are only defined up to sign (or complex phase).
+        expect(vr.abs).to be_within(err).of(vr_true.abs)
+        expect(vl.abs).to be_within(err).of(vl_true.abs)
 
         expect(eigenvalues.dtype).to eq(NMatrix.upcast(dtype, :complex64))
         expect(vr.dtype).to eq(NMatrix.upcast(dtype, :complex64))
@@ -384,7 +387,8 @@ describe "NMatrix::LAPACK functions with internal implementations" do
               end
 
         expect(eigenvalues).to be_within(err).of(eigenvalues_true)
-        expect(vr).to be_within(err).of(vr_true)
+        # Eigenvectors are only defined up to sign (or complex phase).
+        expect(vr.abs).to be_within(err).of(vr_true.abs)
         expect(vl).to be_within(err).of(vl_true)
 
         expect(eigenvalues.dtype).to eq(dtype)
@@ -441,7 +445,8 @@ describe "NMatrix::LAPACK functions with internal implementations" do
               end
 
         expect(eigenvalues).to be_within(err).of(eigenvalues_true)
-        expect(vr).to be_within(err).of(vr_true)
+        # Eigenvectors are only defined up to sign (or complex phase).
+        expect(vr.abs).to be_within(err).of(vr_true.abs)
       end
     end
   end

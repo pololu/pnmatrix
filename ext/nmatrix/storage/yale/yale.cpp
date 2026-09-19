@@ -369,7 +369,10 @@ YALE_STORAGE* ref(YALE_STORAGE* s, SLICE* slice) {
 template <typename DType>
 void set(VALUE left, SLICE* slice, VALUE right) {
   YALE_STORAGE* storage = NM_STORAGE_YALE(left);
-  YaleStorage<DType> y(storage);
+  if (storage->dtype == nm::RUBYOBJ) {
+    NM_OBJECT_STORAGE_WB_UNPROTECT(left);
+  }
+  YaleStorage<DType> y(storage, left);
   y.insert(slice, right);
 }
 
@@ -1456,9 +1459,25 @@ void nm_yale_storage_mark(STORAGE* storage_base) {
   YALE_STORAGE* storage = (YALE_STORAGE*)storage_base;
 
   if (storage && storage->dtype == nm::RUBYOBJ) {
+    /*
+     * Yale slice references are lightweight wrappers around another
+     * YALE_STORAGE. They may have no A array or capacity of their own, but
+     * Ruby objects returned through the reference still live in the source
+     * storage. Mark the source's initialized A entries so GC cannot reclaim
+     * those objects while the reference is alive.
+     */
+    YALE_STORAGE* src = reinterpret_cast<YALE_STORAGE*>(storage->src);
 
-    VALUE* a = (VALUE*)(storage->a);
-    rb_gc_mark_locations(a, &(a[storage->capacity-1]));
+    size_t size = src ? nm::yale_storage::get_size(src) : 0;
+    if (src && src->a && size > 0) {
+      VALUE* a = reinterpret_cast<VALUE*>(src->a);
+      /*
+       * Yale object storage keeps real Ruby VALUEs in the native A array.
+       * Marking them exactly is important after mutation, because otherwise
+       * GC may reclaim recently assigned objects before later iteration.
+       */
+      for (size_t i = 0; i < size; ++i) rb_gc_mark(a[i]);
+    }
   }
 }
 

@@ -50,7 +50,18 @@ public:
    : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
      slice(storage != storage->src),
      slice_shape(storage->shape),
-     slice_offset(storage->offset)
+     slice_offset(storage->offset),
+     owner(Qnil)
+  {
+    nm_yale_storage_register(storage->src);
+  }
+
+  YaleStorage(const YALE_STORAGE* storage, VALUE owner_)
+   : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
+     slice(storage != storage->src),
+     slice_shape(storage->shape),
+     slice_offset(storage->offset),
+     owner(owner_)
   {
     nm_yale_storage_register(storage->src);
   }
@@ -59,7 +70,8 @@ public:
    : s(reinterpret_cast<YALE_STORAGE*>(storage->src)),
      slice(storage != storage->src),
      slice_shape(storage->shape),
-     slice_offset(storage->offset)
+     slice_offset(storage->offset),
+     owner(Qnil)
   {
     nm_yale_storage_register(reinterpret_cast<STORAGE*>(storage->src));
   }
@@ -95,6 +107,17 @@ public:
   inline D* a_p()         const       { return reinterpret_cast<D*>(s->a); }
   inline const D& a(size_t p) const   { return a_p()[p]; }
   inline D& a(size_t p)               { return a_p()[p]; }
+
+  // Object matrices store Ruby VALUEs in native memory, so replacing a value must
+  // go through Ruby's write barrier. Without it, generational GC can collect a
+  // newly assigned object before the matrix is marked again.
+  inline void write_a(size_t p, const D& val) {
+    if (dtype() == nm::RUBYOBJ && owner != Qnil) {
+      RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(s->a) + p, reinterpret_cast<const VALUE*>(&val)[0]);
+    } else {
+      a(p) = val;
+    }
+  }
 
   bool real_row_empty(size_t i) const { return ija(i+1) - ija(i) == 0 ? true : false; }
 
@@ -467,7 +490,7 @@ public:
    * A pseudo-insert operation, since the diagonal portion of the A array is constant size.
    */
   stored_diagonal_iterator insert(stored_diagonal_iterator position, const D& val) {
-    *position = val;
+    write_a(position.p(), val);
     return position;
   }
 
@@ -694,24 +717,37 @@ public:
 
     E* ns_a    = reinterpret_cast<E*>(ns.a);
     size_t sz  = shape(0) + 1; // current used size of ns
-    nm_yale_storage_register(&ns);
+    E converted = val;
+    if (ns.dtype == nm::RUBYOBJ) {
+      nm_register_value(reinterpret_cast<VALUE*>(&converted));
+    }
 
     // FIXME: If diagonals line up, it's probably faster to do this with stored diagonal and stored non-diagonal iterators
     for (const_row_iterator it = cribegin(); it != criend(); ++it) {
       for (auto jt = it.begin(); !jt.end(); ++jt) {
         if (it.i() == jt.j()) {
-          if (Yield)  ns_a[it.i()] = rb_yield(~jt);
-          else        ns_a[it.i()] = static_cast<E>(*jt);
+          if (Yield)  converted = E(rb_yield(~jt));
+          else        converted = static_cast<E>(*jt);
+          if (ns.dtype == nm::RUBYOBJ) {
+            nm_register_value(reinterpret_cast<VALUE*>(&converted));
+          }
+          ns_a[it.i()] = converted;
         } else if (*jt != const_default_obj()) {
-          if (Yield)  ns_a[sz]     = rb_yield(~jt);
-          else        ns_a[sz]     = static_cast<E>(*jt);
+          if (Yield)  converted = E(rb_yield(~jt));
+          else        converted = static_cast<E>(*jt);
+          if (ns.dtype == nm::RUBYOBJ) {
+            nm_register_value(reinterpret_cast<VALUE*>(&converted));
+          }
+          ns_a[sz]     = converted;
           ns.ija[sz]    = jt.j();
           ++sz;
         }
       }
       ns.ija[it.i()+1]  = sz;
     }
-    nm_yale_storage_unregister(&ns);
+    if (ns.dtype == nm::RUBYOBJ) {
+      nm_unregister_value(reinterpret_cast<VALUE*>(&converted));
+    }
 
     //ns.ija[shape(0)] = sz;                // indicate end of last row
     ns.ndnz          = sz - shape(0) - 1; // update ndnz count
@@ -751,14 +787,24 @@ public:
 
       E* la = reinterpret_cast<E*>(lhs->a);
 
-      nm_yale_storage_register(lhs);
+      E converted;
+      if (lhs->dtype == nm::RUBYOBJ) {
+        nm_register_value(reinterpret_cast<VALUE*>(&converted));
+      }
       for (size_t m = 0; m < size(); ++m) {
         if (Yield) {
-    la[m] = rb_yield(nm::yale_storage::nm_rb_dereference(a(m)));
-  }
-        else       la[m] = static_cast<E>(a(m));
+          converted = E(rb_yield(nm::yale_storage::nm_rb_dereference(a(m))));
+        } else {
+          converted = static_cast<E>(a(m));
+        }
+        if (lhs->dtype == nm::RUBYOBJ) {
+          nm_register_value(reinterpret_cast<VALUE*>(&converted));
+        }
+        la[m] = converted;
       }
-      nm_yale_storage_unregister(lhs);
+      if (lhs->dtype == nm::RUBYOBJ) {
+        nm_unregister_value(reinterpret_cast<VALUE*>(&converted));
+      }
 
     }
 
@@ -995,10 +1041,18 @@ protected:
         if (v_offset >= v_size) v_offset %= v_size;
 
         if (j + real_j == i + real_i) { // modify diagonal
-          new_a[real_i + i] = v[v_offset];
+          if (s->dtype == nm::RUBYOBJ && owner != Qnil) {
+            RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(new_a) + real_i + i, reinterpret_cast<const VALUE*>(v)[v_offset]);
+          } else {
+            new_a[real_i + i] = v[v_offset];
+          }
         } else if (v[v_offset] != const_default_obj()) {
           new_ija[q]        = j + real_j;
-          new_a[q]          = v[v_offset];
+          if (s->dtype == nm::RUBYOBJ && owner != Qnil) {
+            RB_OBJ_WRITE(owner, reinterpret_cast<VALUE*>(new_a) + q, reinterpret_cast<const VALUE*>(v)[v_offset]);
+          } else {
+            new_a[q]        = v[v_offset];
+          }
           ++q; // move on to next q location
         }
 
@@ -1132,6 +1186,7 @@ protected:
   bool          slice;
   size_t*       slice_shape;
   size_t*       slice_offset;
+  VALUE         owner;
 };
 
 } // end of nm namespace

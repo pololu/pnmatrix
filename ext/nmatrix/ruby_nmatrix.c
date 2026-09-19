@@ -412,8 +412,14 @@ static VALUE nm_alloc(VALUE klass) {
   mat->stype = nm::DENSE_STORE;
   mat->storage = NULL;
 
-  // DO NOT MARK This STRUCT. It has no storage allocated, and no stype, so mark will do an invalid something.
-  return Data_Wrap_Struct(klass, NULL, nm_delete, mat);
+  /*
+   * Newly allocated NMatrix wrappers do not have storage yet, but nm_mark is
+   * explicitly null-storage safe. Installing it here is required for object
+   * dtype matrices after initialization: otherwise Ruby never asks the matrix
+   * to mark VALUEs stored in native dense/list/Yale memory, so a later GC can
+   * reclaim objects that were assigned into the matrix.
+   */
+  return Data_Wrap_Struct(klass, nm_mark, nm_delete, mat);
 }
 
 /*
