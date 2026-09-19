@@ -51,6 +51,7 @@ describe NMatrix::IO do
   end
 
   it "reads MATLAB .mat file containing a single square sparse matrix" do
+    skip "Mat5Reader was removed from pnmatrix" unless defined?(NMatrix::IO::Matlab::Mat5Reader)
     pending("not yet implemented for NMatrix-JRuby") if jruby?
     n = NMatrix::IO::Matlab.load_mat("spec/4x4_sparse.mat")
     expect(n[0,0]).to eq(2)
@@ -62,19 +63,20 @@ describe NMatrix::IO do
   end
 
   it "reads MATLAB .mat file containing a single dense integer matrix" do
+    skip "Mat5Reader was removed from pnmatrix" unless defined?(NMatrix::IO::Matlab::Mat5Reader)
     n = NMatrix::IO::Matlab.load_mat("spec/4x5_dense.mat")
     m = NMatrix.new([4,5], [16,17,18,19,20,15,14,13,12,11,6,7,8,9,10,5,4,3,2,1])
     expect(n).to eq(m)
   end
 
   it "reads MATLAB .mat file containing a single dense double matrix" do
+    skip "Mat5Reader was removed from pnmatrix" unless defined?(NMatrix::IO::Matlab::Mat5Reader)
     n = NMatrix::IO::Matlab.load_mat("spec/2x2_dense_double.mat")
     m = NMatrix.new(2, [1.1, 2.0, 3.0, 4.0], dtype: :float64)
     expect(n).to eq(m)
   end
 
   it "loads and saves MatrixMarket .mtx file containing a single large sparse double matrix" do
-    pending "spec disabled because it's so slow"
     n = NMatrix::IO::Market.load("spec/utm5940.mtx")
     NMatrix::IO::Market.save(n, "spec/utm5940.saved.mtx")
     expect(`wc -l spec/utm5940.mtx`.split[0]).to eq(`wc -l spec/utm5940.saved.mtx`.split[0])

@@ -15,5 +15,7 @@ pkgs.mkShellNoCC {
     bundler
     gcc
     libgcc
+    blas
+    lapack
   ];
 }
